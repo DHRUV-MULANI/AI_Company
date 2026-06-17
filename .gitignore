@@ -1,0 +1,9 @@
+node_modules/
+.npm/
+venv/
+.venv/
+__pycache__/
+.env
+*.log
+bin/
+obj/

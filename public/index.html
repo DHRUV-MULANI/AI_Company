@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Company OS</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+  header { background: #1a1d2e; border-bottom: 1px solid #2d3748; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 1.2rem; font-weight: 700; color: #7c3aed; letter-spacing: 0.05em; }
+  .sprint-badge { background: #1e3a5f; color: #60a5fa; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+
+  .toolbar { padding: 12px 24px; background: #13151f; border-bottom: 1px solid #2d3748; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: opacity 0.15s; }
+  button:hover { opacity: 0.85; }
+  .btn-tick { background: #7c3aed; color: white; }
+  .btn-hire { background: #059669; color: white; }
+  .btn-expense { background: #d97706; color: white; }
+  .btn-task { background: #2563eb; color: white; }
+  .btn-refresh { background: #374151; color: #d1d5db; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px 24px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card { background: #1a1d2e; border: 1px solid #2d3748; border-radius: 10px; overflow: hidden; }
+  .card-header { padding: 12px 16px; background: #13151f; border-bottom: 1px solid #2d3748; display: flex; justify-content: space-between; align-items: center; }
+  .card-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; }
+  .card-body { padding: 12px 16px; max-height: 320px; overflow-y: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th { text-align: left; padding: 6px 8px; color: #64748b; font-weight: 600; border-bottom: 1px solid #2d3748; }
+  td { padding: 6px 8px; border-bottom: 1px solid #1e2535; }
+  tr:last-child td { border-bottom: none; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700; }
+  .badge-PENDING    { background: #1e3a5f; color: #60a5fa; }
+  .badge-IN_PROGRESS{ background: #1a3a2a; color: #34d399; }
+  .badge-BLOCKED    { background: #3b1a1a; color: #f87171; }
+  .badge-COMPLETED  { background: #1a2a1a; color: #86efac; }
+  .badge-ACTIVE     { background: #1a3a2a; color: #34d399; }
+  .badge-COMPLETED-sprint { background: #2d2d2d; color: #94a3b8; }
+  .badge-CREDIT     { background: #1a3a2a; color: #34d399; }
+  .badge-DEBIT      { background: #3b1a1a; color: #f87171; }
+
+  .balance-bar { padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .balance-amount { font-size: 1.6rem; font-weight: 800; }
+  .balance-healthy { color: #34d399; }
+  .balance-warning { color: #fbbf24; }
+  .balance-critical { color: #f87171; }
+  .balance-label { font-size: 0.75rem; color: #64748b; }
+
+  .log-entry { padding: 6px 0; border-bottom: 1px solid #1e2535; font-size: 0.78rem; display: flex; gap: 8px; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-time { color: #4b5563; white-space: nowrap; font-family: monospace; }
+  .log-role { color: #7c3aed; font-weight: 700; min-width: 80px; }
+  .log-desc { color: #cbd5e1; }
+
+  .dept-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .dept-card { background: #13151f; border: 1px solid #2d3748; border-radius: 8px; padding: 10px; }
+  .dept-name { font-size: 0.75rem; font-weight: 700; color: #7c3aed; margin-bottom: 6px; }
+  .dept-stat { font-size: 0.72rem; color: #94a3b8; display: flex; justify-content: space-between; }
+  .dept-stat span { font-weight: 700; color: #e2e8f0; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #1a1d2e; border: 1px solid #2d3748; border-radius: 12px; padding: 24px; width: 380px; }
+  .modal h3 { margin-bottom: 16px; font-size: 1rem; color: #e2e8f0; }
+  .modal label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px; margin-top: 12px; }
+  .modal input, .modal select { width: 100%; padding: 8px 12px; background: #0f1117; border: 1px solid #374151; border-radius: 6px; color: #e2e8f0; font-size: 0.85rem; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+  .btn-cancel { background: #374151; color: #d1d5db; }
+  .btn-submit { background: #7c3aed; color: white; }
+
+  .alert-bar { background: #3b1a1a; border: 1px solid #7f1d1d; color: #fca5a5; padding: 8px 24px; font-size: 0.82rem; display: none; }
+  .alert-bar.show { display: block; }
+
+  .empty { color: #4b5563; font-size: 0.82rem; padding: 12px 0; text-align: center; }
+  .full-width { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏢 AI Company Operating System</h1>
+  <span class="sprint-badge" id="sprint-label">Sprint —</span>
+</header>
+
+<div id="alert-bar" class="alert-bar"></div>
+
+<div class="toolbar">
+  <button class="btn-tick" onclick="tick()">⚡ Tick (advance cycle)</button>
+  <button class="btn-task" onclick="openModal('task')">＋ Create Task</button>
+  <button class="btn-hire" onclick="openModal('hire')">👤 Hire Employee</button>
+  <button class="btn-expense" onclick="openModal('expense')">💸 Submit Expense</button>
+  <button class="btn-refresh" onclick="refresh()">↻ Refresh</button>
+</div>
+
+<div class="grid">
+
+  <!-- Budget -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">💰 Budget</span></div>
+    <div class="balance-bar">
+      <div>
+        <div class="balance-label">Current Balance</div>
+        <div class="balance-amount" id="balance">$0</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>Description</th><th>Type</th><th>Amount</th><th>Balance</th></tr></thead>
+        <tbody id="ledger-body"><tr><td colspan="4" class="empty">No transactions</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Task Board -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">📋 Task Board</span><span id="task-count" style="font-size:0.75rem;color:#64748b"></span></div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>Title</th><th>Owner</th><th>Priority</th><th>Status</th></tr></thead>
+        <tbody id="task-body"><tr><td colspan="4" class="empty">No tasks</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Employees -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">👥 Employees</span><span id="emp-count" style="font-size:0.75rem;color:#64748b"></span></div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>Name</th><th>Role</th><th>Dept</th><th>Onboarding</th></tr></thead>
+        <tbody id="emp-body"><tr><td colspan="4" class="empty">No employees</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Department Updates -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">📣 Departments</span></div>
+    <div class="card-body">
+      <div class="dept-grid" id="dept-grid"></div>
+    </div>
+  </div>
+
+  <!-- Activity Log -->
+  <div class="card full-width">
+    <div class="card-header"><span class="card-title">📜 Activity Log</span><span style="font-size:0.72rem;color:#4b5563">last 50 events</span></div>
+    <div class="card-body" style="max-height:260px">
+      <div id="log-body"><div class="empty">No activity</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="modal-hire">
+  <div class="modal">
+    <h3>👤 Hire Employee</h3>
+    <label>Name</label><input id="hire-name" placeholder="e.g. Alice Smith">
+    <label>Role</label><input id="hire-role" placeholder="e.g. Senior Engineer">
+    <label>Department</label>
+    <select id="hire-dept">
+      <option>Engineering</option><option>Marketing</option><option>Finance</option>
+      <option>Operations</option><option>HR</option><option>Executive</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('hire')">Cancel</button>
+      <button class="btn-submit" onclick="submitHire()">Hire</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-expense">
+  <div class="modal">
+    <h3>💸 Submit Expense</h3>
+    <label>Description</label><input id="exp-desc" placeholder="e.g. Cloud infrastructure">
+    <label>Amount ($)</label><input id="exp-amount" type="number" placeholder="e.g. 500">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('expense')">Cancel</button>
+      <button class="btn-submit" onclick="submitExpense()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-task">
+  <div class="modal">
+    <h3>＋ Create Task</h3>
+    <label>Title</label><input id="task-title" placeholder="e.g. Build auth module">
+    <label>Owner</label>
+    <select id="task-owner">
+      <option>CEO</option><option>CTO</option><option>HR</option>
+      <option>Finance</option><option>Operations</option><option>Marketing</option>
+    </select>
+    <label>Priority</label>
+    <select id="task-priority">
+      <option>LOW</option><option selected>MEDIUM</option><option>HIGH</option><option>CRITICAL</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('task')">Cancel</button>
+      <button class="btn-submit" onclick="submitTask()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:3000'
+
+async function refresh() {
+  const [report, log] = await Promise.all([
+    fetch(`${API}/report`).then(r => r.json()),
+    fetch(`${API}/log`).then(r => r.json()),
+  ])
+  renderReport(report)
+  renderLog(log)
+}
+
+function renderReport(r) {
+  // Sprint
+  document.getElementById('sprint-label').textContent = `Sprint ${r.sprint_id?.slice(0,8)}…`
+
+  // Balance
+  const entries = r.budget_ledger
+  const balance = entries.length ? entries[entries.length - 1].running_balance : 0
+  const balEl = document.getElementById('balance')
+  balEl.textContent = `$${balance.toLocaleString()}`
+  balEl.className = 'balance-amount ' + (balance >= 5000 ? 'balance-healthy' : balance >= 2000 ? 'balance-warning' : 'balance-critical')
+
+  // Ledger
+  const lb = document.getElementById('ledger-body')
+  if (!entries.length) { lb.innerHTML = '<tr><td colspan="4" class="empty">No transactions</td></tr>'; }
+  else lb.innerHTML = [...entries].reverse().slice(0,20).map(e => `
+    <tr>
+      <td>${e.description}</td>
+      <td><span class="badge badge-${e.type}">${e.type}</span></td>
+      <td>${e.type === 'CREDIT' ? '+' : '-'}$${e.amount.toLocaleString()}</td>
+      <td>$${e.running_balance.toLocaleString()}</td>
+    </tr>`).join('')
+
+  // Tasks
+  const tb = document.getElementById('task-body')
+  document.getElementById('task-count').textContent = `${r.task_board.length} tasks`
+  if (!r.task_board.length) { tb.innerHTML = '<tr><td colspan="4" class="empty">No tasks</td></tr>'; }
+  else tb.innerHTML = r.task_board.map(t => `
+    <tr>
+      <td>${t.title}</td>
+      <td style="color:#7c3aed;font-weight:600">${t.owner}</td>
+      <td style="font-size:0.75rem;color:#94a3b8">${t.priority}</td>
+      <td><span class="badge badge-${t.status}">${t.status.replace('_',' ')}</span></td>
+    </tr>`).join('')
+
+  // Employees
+  const eb = document.getElementById('emp-body')
+  document.getElementById('emp-count').textContent = `${r.employee_registry.length} employees`
+  if (!r.employee_registry.length) { eb.innerHTML = '<tr><td colspan="4" class="empty">No employees</td></tr>'; }
+  else eb.innerHTML = r.employee_registry.map(e => `
+    <tr>
+      <td style="font-weight:600">${e.name}</td>
+      <td>${e.role}</td>
+      <td style="color:#94a3b8">${e.department}</td>
+      <td><span class="badge badge-${e.onboarding_status === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS'}">${e.onboarding_status.replace('_',' ')}</span></td>
+    </tr>`).join('')
+
+  // Departments
+  const dg = document.getElementById('dept-grid')
+  dg.innerHTML = r.department_updates.map(d => `
+    <div class="dept-card">
+      <div class="dept-name">${d.agent_role}</div>
+      <div class="dept-stat">In Progress <span style="color:#34d399">${d.tasks_in_progress}</span></div>
+      <div class="dept-stat">Completed <span style="color:#86efac">${d.tasks_completed}</span></div>
+      <div class="dept-stat">Blocked <span style="color:#f87171">${d.tasks_blocked}</span></div>
+    </div>`).join('')
+
+  // Alerts
+  const alertBar = document.getElementById('alert-bar')
+  if (r.alerts && r.alerts.length) {
+    alertBar.textContent = '⚠️ ' + r.alerts.map(a => a.message).join(' | ')
+    alertBar.classList.add('show')
+  } else {
+    alertBar.classList.remove('show')
+  }
+}
+
+function renderLog(entries) {
+  const lb = document.getElementById('log-body')
+  if (!entries.length) { lb.innerHTML = '<div class="empty">No activity</div>'; return; }
+  lb.innerHTML = entries.map(e => `
+    <div class="log-entry">
+      <span class="log-time">${new Date(e.timestamp).toLocaleTimeString()}</span>
+      <span class="log-role">${e.agent_role}</span>
+      <span class="log-desc">${e.event_type} — ${e.description}</span>
+    </div>`).join('')
+}
+
+async function tick() {
+  await fetch(`${API}/tick`, { method: 'POST' })
+  await refresh()
+}
+
+function openModal(type) { document.getElementById(`modal-${type}`).classList.add('open') }
+function closeModal(type) { document.getElementById(`modal-${type}`).classList.remove('open') }
+
+async function submitHire() {
+  const name = document.getElementById('hire-name').value.trim()
+  const role = document.getElementById('hire-role').value.trim()
+  const department = document.getElementById('hire-dept').value
+  if (!name || !role) return alert('Name and role required')
+  await fetch(`${API}/hire`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, role, department }) })
+  closeModal('hire')
+  await refresh()
+}
+
+async function submitExpense() {
+  const description = document.getElementById('exp-desc').value.trim()
+  const amount = parseFloat(document.getElementById('exp-amount').value)
+  if (!description || !amount) return alert('Description and amount required')
+  await fetch(`${API}/expense`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ description, amount }) })
+  closeModal('expense')
+  await refresh()
+}
+
+async function submitTask() {
+  const title = document.getElementById('task-title').value.trim()
+  const owner = document.getElementById('task-owner').value
+  const priority = document.getElementById('task-priority').value
+  if (!title) return alert('Title required')
+  await fetch(`${API}/task`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ title, owner, priority }) })
+  closeModal('task')
+  await refresh()
+}
+
+// Auto-refresh every 5 seconds
+refresh()
+setInterval(refresh, 5000)
+</script>
+</body>
+</html>
